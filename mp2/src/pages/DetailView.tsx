@@ -4,6 +4,23 @@ import { useApods } from "../store/ApodStore";
 import { fetchApodByDate } from "../api/nasa";
 import { Apod } from "../types";
 
+function youtubeEmbedFromUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtube.com")) {
+      const id =
+        u.pathname.startsWith("/embed/") ? u.pathname.split("/").pop() :
+        u.pathname === "/watch" ? u.searchParams.get("v") : null;
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    if (u.hostname === "youtu.be") {
+      const id = u.pathname.slice(1);
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+  } catch {}
+  return null;
+}
+
 export default function DetailView() {
   const { date = "" } = useParams();
   const { items, setItems } = useApods();
@@ -39,7 +56,12 @@ export default function DetailView() {
   if (loading || !apod) return <main className="container"><p>Loading…</p></main>;
 
   const isImage = apod.media_type === "image";
-  const mediaSrc = isImage ? (apod.hdurl || apod.url) : apod.url;
+  const isVideo = apod.media_type === "video";
+  const isMp4 = isVideo && /\.mp4($|\?)/i.test(apod.url);
+  const mediaSrc =
+  isImage ? (apod.hdurl || apod.url)
+  : isMp4 ? apod.url
+  : youtubeEmbedFromUrl(apod.url) || apod.url;
 
   return (
     <main className="container">
@@ -50,18 +72,20 @@ export default function DetailView() {
       <h1>{apod.title}</h1>
       <div className="meta">{apod.date}{apod.copyright ? ` • © ${apod.copyright}` : ""}</div>
 
-      <div className="media">
+      <div className={`media ${isImage ? "media--image" : "media--video"}`}>
         {isImage ? (
-          <img src={mediaSrc} alt={apod.title} />
+            <img src={mediaSrc} alt={apod.title} />
+        ) : isMp4 ? (
+            <video src={mediaSrc} controls playsInline />
         ) : (
-          <iframe
+            <iframe
             title={apod.title}
             src={mediaSrc}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
-          />
+            />
         )}
-      </div>
+        </div>
 
       <p className="explanation">{apod.explanation}</p>
 
