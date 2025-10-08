@@ -31,7 +31,7 @@ export default function ListView() {
       setError(null);
       try {
         const end = isoDaysAgo(0);
-        const start = isoDaysAgo(60); // last ~2 months
+        const start = isoDaysAgo(120); // last ~4 months
         const apods = await fetchApods(start, end);
         setItems(apods);
       } catch (e: any) {

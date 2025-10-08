@@ -4,13 +4,30 @@ import { useApods } from "../store/ApodStore";
 import { fetchApodByDate } from "../api/nasa";
 import { Apod } from "../types";
 
+function vimeoEmbedFromUrl(url: string): string | null {
+    try {
+        const u = new URL(url);
+        if (u.hostname.includes("vimeo.com")) {
+            const m = u.pathname.match(/\/(\d+)/);
+            const id = m?.[1];
+            return id ? `https://player.vimeo.com/video/${id}` : null;
+        }
+        if (u.hostname === "player.vimeo.com" && u.pathname.startsWith("/video/")) {
+            return u.toString();
+        }
+    } catch {}
+    return null;
+}
+
 function youtubeEmbedFromUrl(url: string): string | null {
   try {
     const u = new URL(url);
     if (u.hostname.includes("youtube.com")) {
-      const id =
-        u.pathname.startsWith("/embed/") ? u.pathname.split("/").pop() :
-        u.pathname === "/watch" ? u.searchParams.get("v") : null;
+      const id = u.pathname.startsWith("/embed/") 
+      ? u.pathname.split("/").pop() 
+      : u.pathname === "/watch" 
+      ? u.searchParams.get("v") 
+      : null;
       return id ? `https://www.youtube.com/embed/${id}` : null;
     }
     if (u.hostname === "youtu.be") {
@@ -58,10 +75,14 @@ export default function DetailView() {
   const isImage = apod.media_type === "image";
   const isVideo = apod.media_type === "video";
   const isMp4 = isVideo && /\.mp4($|\?)/i.test(apod.url);
+  const yt = isVideo ? youtubeEmbedFromUrl(apod.url) : null;
+  const vimeo = isVideo ? vimeoEmbedFromUrl(apod.url) : null;
   const mediaSrc =
   isImage ? (apod.hdurl || apod.url)
   : isMp4 ? apod.url
-  : youtubeEmbedFromUrl(apod.url) || apod.url;
+  : yt ? yt
+  : vimeo ? vimeo
+  : null;
 
   return (
     <main className="container">
@@ -74,18 +95,33 @@ export default function DetailView() {
 
       <div className={`media ${isImage ? "media--image" : "media--video"}`}>
         {isImage ? (
-            <img src={mediaSrc} alt={apod.title} />
+            <img src={mediaSrc!} alt={apod.title} />
         ) : isMp4 ? (
-            <video src={mediaSrc} controls playsInline />
-        ) : (
+            <video src={mediaSrc!} controls playsInline />
+        ) : mediaSrc ? (
             <iframe
             title={apod.title}
             src={mediaSrc}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             />
+        ) : (
+            // Fallback: open the original APOD link in a new tab
+            <div>
+            <a
+                className="btn"
+                href={apod.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open video on APOD (opens in a new tab)"
+            >
+                Open video on APOD ↗
+            </a>
+            <div className="meta">This video host doesn’t allow embedding.</div>
+            </div>
         )}
         </div>
+
 
       <p className="explanation">{apod.explanation}</p>
 
