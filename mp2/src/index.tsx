@@ -3,21 +3,19 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { HashRouter } from 'react-router-dom';
+import { BrowserRouter } from "react-router-dom";
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 
-// CRA sets PUBLIC_URL from package.json "homepage" in builds.
-// In dev it's empty, which is perfect (baseline = "/").
-const basename = new URL(process.env.PUBLIC_URL || '/', window.location.href).pathname;
+const base = process.env.NODE_ENV === "production" ? "/CS-409-MP2" : undefined;
 
 root.render(
   <React.StrictMode>
-    <HashRouter>
+    <BrowserRouter basename={base}>
       <App />
-    </HashRouter>
+    </BrowserRouter>
   </React.StrictMode>
 );
 
